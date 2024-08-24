@@ -57,7 +57,20 @@ contract GoodOlRoulette {
         ];
         require(currentBet.amount > 0, "No bet found for this block number");
 
-        uint8 winningNumber = uint64(blockhash(blockNumber + _blocksAhead)) % 37; //Based Randomizer
+        // Based Randomizer:
+        // blockhash(blockNumber) is pseudorandom
+        // => its first 9 bytes are also pseudorandom
+        // And: 9 bytes are exactly representable as uint72
+        // => uint72(blockhash) is pseudorandom
+        // And:
+        // min(uint72) % 38 = 0
+        // max(uint72) % 38 = 37
+        // => uint72(blockhash) % 38 has equal distribution between 0 and 37
+        // => uint72(blockhash) % 38 is a pseudorandom number between 0 and 37
+        // ... Roulette Bets are from 0 to 36, representing 37 as 00
+        // We have a pseudorandom number generator that picks a number from an American Roulette Wheel
+        //
+        uint8 winningNumber = uint72(blockhash(blockNumber + _blocksAhead)) % 38;
 
         if (currentBet.chosenNumber == winningNumber) {
             payable(msg.sender).transfer(currentBet.amount * 35);
